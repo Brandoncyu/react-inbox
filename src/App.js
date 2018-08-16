@@ -3,85 +3,32 @@ import './App.css';
 import Compose from './components/Compose'
 import Toolbar from './components/Toolbar'
 import MessageList from './components/MessageList'
+import axios from 'axios'
 
 class App extends Component {
   constructor(){
     super()
     this.state = {
-      messages: [
-  {
-    id: 1,
-    subject: "You can't input the protocol without calculating the mobile RSS protocol!",
-    read: false,
-    starred: true,
-    labels: ["dev", "personal"]
-  },
-  {
-    id: 2,
-    subject: "connecting the system won't do anything, we need to input the mobile AI panel!",
-    read: false,
-    starred: false,
-    selected: true,
-    labels: []
-  },
-  {
-    id: 3,
-    subject: "Use the 1080p HTTP feed, then you can parse the cross-platform hard drive!",
-    read: false,
-    starred: true,
-    labels: ["dev"]
-  },
-  {
-    id: 4,
-    subject: "We need to program the primary TCP hard drive!",
-    read: true,
-    starred: false,
-    selected: true,
-    labels: []
-  },
-  {
-    id: 5,
-    subject: "If we override the interface, we can get to the HTTP feed through the virtual EXE interface!",
-    read: false,
-    starred: false,
-    labels: ["personal"]
-  },
-  {
-    id: 6,
-    subject: "We need to back up the wireless GB driver!",
-    read: true,
-    starred: true,
-    labels: []
-  },
-  {
-    id: 7,
-    subject: "We need to index the mobile PCI bus!",
-    read: true,
-    starred: false,
-    labels: ["dev", "personal"]
-  },
-  {
-    id: 8,
-    subject: "If we connect the sensor, we can get to the HDD port through the redundant IB firewall!",
-    read: true,
-    starred: true,
-    labels: []
-  }
-]
+      messages: [],
+      composeOn: false
     }
   }
 
-  starMessage = (id) => {
-    const newMessages = this.state.messages.map(element => {
-      if (element.id === id){
-        element.starred = !element.starred
-      }
-      return element
-    })
+  componentDidMount(){
+    this.getAllMessages()
+  }
 
+  async getAllMessages(){
+    const response = await axios.get('http://localhost:8082/api/messages')
     this.setState({
-      messages: newMessages
+      messages: response.data
     })
+  }
+
+  starMessage = async(id) => {
+    const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: [id], command: 'star' })
+
+    this.getAllMessages()
   }
 
   checkBox = (id) => {
@@ -118,96 +65,95 @@ class App extends Component {
     })
   }
 
-  read = () => {
+  read = async() => {
+    let id = []
     const newMessages = this.state.messages
-    let result = newMessages.map(element => {
+    newMessages.forEach(element => {
       if (element.selected === true){
-        element.read = true
-        return element
-      } else {
-        return element
+        id.push(element.id)
       }
     })
 
-    this.setState({
-      messages: result
-    })
+    const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: id, command: 'read', read: true })
+
+    this.getAllMessages()
   }
 
-  unread = () => {
+  unread = async() => {
+    let id = []
     const newMessages = this.state.messages
-    let result = newMessages.map(element => {
+    newMessages.forEach(element => {
       if (element.selected === true){
-        element.read = false
-        return element
-      } else {
-        return element
+        id.push(element.id)
       }
     })
 
-    this.setState({
-      messages: result
-    })
+    const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: id, command: 'read', read: false })
+
+    this.getAllMessages()
   }
 
-  addLabel = (event) =>{
+  addLabel = async(event) =>{
+    let id = []
     const newMessages = this.state.messages
-    let result = newMessages.map(element => {
-      if (element.selected === true && !element.labels.includes(event.target.value) && event.target.value !== 'Apply label'){
-        element.labels.push(event.target.value)
-        element.labels.sort()
-        return element
-      } else {
-        return element
+    newMessages.forEach(element => {
+      if (element.selected === true && !element.labels.includes(event.target.value)){
+        id.push(element.id)
       }
     })
-    this.setState({
-      messages: result
-    })
-  }
 
-  removeLabel = (event) =>{
-    const newMessages = this.state.messages
-    let result = newMessages.map(element => {
-      if (element.selected === true && element.labels.includes(event.target.value)){
-        let index = element.labels.findIndex(e => e == event.target.value)
-        element.labels.splice(index, 1)
-        return element
-      } else {
-        return element
-      }
-    })
-    this.setState({
-      messages: result
-    })
-  }
+    if (event.target.value !== 'Apply label'){
+      const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: id, command: 'addLabel', label: event.target.value })
 
-  deleteMessage = () => {
-    const newMessages = this.state.messages
-    let result = newMessages.filter(element => element.selected !== true)
-
-    this.setState({
-      messages: result
-    })
-  }
-
-  onSubmit = (event) =>{
-    event.preventDefault()
-    const allMessages = this.state.messages
-    const lastMessage = allMessages.slice(-1)[0]
-    const newIndex = lastMessage.id + 1
-    let newMessage = {
-      id: newIndex,
-      subject: event.target.subject.value,
-      read: false,
-      starred: false,
-      selected: false,
-      labels: []
+      this.getAllMessages()
     }
-    allMessages.push(newMessage)
 
+  }
+
+  removeLabel = async(event) =>{
+    let id = []
+    const newMessages = this.state.messages
+    newMessages.forEach(element => {
+      if (element.selected === true){
+        id.push(element.id)
+      }
+    })
+
+    if (event.target.value !== 'Apply label'){
+      const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: id, command: 'removeLabel', label: event.target.value })
+
+      this.getAllMessages()
+    }
+  }
+
+  deleteMessage = async() => {
+    let id = []
+    const newMessages = this.state.messages
+    newMessages.forEach(element => {
+      if (element.selected === true){
+        id.push(element.id)
+      }
+    })
+    console.log(id)
+    const response = await axios.patch('http://localhost:8082/api/messages', { messageIds: id, command: 'delete' })
+
+    this.getAllMessages()
+  }
+
+  onSubmit = async(event) =>{
+    event.preventDefault()
+    const response = await axios.post('http://localhost:8082/api/messages', { subject: event.target.subject.value, body: event.target.body.value })
+
+    const newResponse = await axios.get('http://localhost:8082/api/messages')
     this.setState({
-      messages: allMessages
+      messages: newResponse.data,
+      composeOn: false
+    })
+  }
+
+  toggleCompose = () => {
+    this.setState({
+      composeOn: !this.state.composeOn
     })
   }
 
@@ -215,8 +161,8 @@ class App extends Component {
   render() {
     return (
       <div className="container">
-        <Toolbar selectAll={this.selectAll} read={this.read} unread={this.unread} addLabel={this.addLabel} removeLabel={this.removeLabel} deleteMessage={this.deleteMessage}  messages={this.state.messages} />
-        <Compose onSubmit={this.onSubmit} />
+        <Toolbar selectAll={this.selectAll} read={this.read} unread={this.unread} addLabel={this.addLabel} removeLabel={this.removeLabel} deleteMessage={this.deleteMessage}  messages={this.state.messages} toggleCompose={this.toggleCompose} />
+        {this.state.composeOn && <Compose onSubmit={this.onSubmit} />}
         <MessageList messages={this.state.messages} starMessage={this.starMessage} checkBox={this.checkBox}/>
       </div>
     );

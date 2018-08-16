@@ -25,6 +25,11 @@ class Toolbar extends Component{
           unread messages
         </p>
 
+        <a onClick={this.props.toggleCompose} className="btn btn-danger">
+          <i className="fa fa-plus">
+          </i>
+        </a>
+
         <button onClick={this.props.selectAll} className="btn btn-default">
           <i className={`fa ${selectedMark}`}></i>
         </button>
@@ -55,7 +60,8 @@ class Toolbar extends Component{
           <i className="fa fa-trash-o"></i>
         </button>
       </div>
-    </div>)
+    </div>
+  )
   }
 }
 
