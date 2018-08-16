@@ -9,6 +9,15 @@ class Toolbar extends Component{
     const counter = this.props.messages
     const result = counter.filter(element => element.read !== true)
     const count = result.length
+    const selected = counter.filter(element => element.selected === true)
+    let selectedMark
+    if (selected.length === counter.length){
+      selectedMark = `fa-check-square-o`
+    } else if (selected.length === 0) {
+      selectedMark = `fa-square-o`
+    } else{
+      selectedMark = `fa-minus-square-o`
+    }
     return(<div className="row toolbar">
       <div className="col-md-12">
         <p className="pull-right">
@@ -17,7 +26,7 @@ class Toolbar extends Component{
         </p>
 
         <button onClick={this.props.selectAll} className="btn btn-default">
-          <i className="fa fa-check-square-o"></i>
+          <i className={`fa ${selectedMark}`}></i>
         </button>
 
         <button onClick={this.props.read} className="btn btn-default">
